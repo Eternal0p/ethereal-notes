@@ -69,6 +69,7 @@ export default function NoteEditor() {
 
   // Initialize TipTap editor
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
       StarterKit.configure({
         heading: {
@@ -283,8 +284,8 @@ export default function NoteEditor() {
                   type="button"
                   onClick={() => form.setValue('color', color.value)}
                   className={`w-10 h-10 rounded-full border-2 transition-all ${form.watch('color') === color.value
-                      ? 'border-white scale-110'
-                      : 'border-transparent opacity-70 hover:opacity-100'
+                    ? 'border-white scale-110'
+                    : 'border-transparent opacity-70 hover:opacity-100'
                     }`}
                   style={{ backgroundColor: color.value }}
                   title={color.label}
