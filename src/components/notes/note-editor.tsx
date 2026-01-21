@@ -166,7 +166,7 @@ export default function NoteEditor() {
 
   return (
     <Dialog open={isEditorOpen} onOpenChange={handleClose}>
-      <DialogContent className="border-white/10 bg-background/80 backdrop-blur-xl sm:max-w-[625px]">
+      <DialogContent className="border-white/10 bg-background/80 backdrop-blur-xl sm:max-w-[625px] max-h-[85vh] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             <DialogHeader>
