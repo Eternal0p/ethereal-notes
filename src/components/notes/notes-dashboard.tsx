@@ -27,10 +27,11 @@ export default function NotesDashboard({ user }: NotesDashboardProps) {
   useEffect(() => {
     if (!user) return;
 
+    // Temporarily removing orderBy to avoid composite index requirement
+    // Notes will load unsorted until we create the proper index
     const q = query(
       collection(db, `users/${user.uid}/notes`),
-      where('isDeleted', '==', false),
-      orderBy('updatedAt', 'desc')
+      where('isDeleted', '==', false)
     );
 
     const unsubscribe = onSnapshot(
@@ -52,6 +53,12 @@ export default function NotesDashboard({ user }: NotesDashboardProps) {
             updatedAt: data.updatedAt,
             userId: data.userId,
           });
+        });
+        // Sort notes by updatedAt in memory (descending)
+        notesData.sort((a, b) => {
+          const aTime = a.updatedAt instanceof Object && 'seconds' in a.updatedAt ? a.updatedAt.seconds : 0;
+          const bTime = b.updatedAt instanceof Object && 'seconds' in b.updatedAt ? b.updatedAt.seconds : 0;
+          return bTime - aTime;
         });
         console.log(`Loaded ${notesData.length} notes from Firestore`);
         setNotes(notesData);
