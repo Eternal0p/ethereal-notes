@@ -50,7 +50,7 @@ const colors = [
 ];
 
 export default function NoteEditor() {
-  const { isEditorOpen, setIsEditorOpen, currentNote, setCurrentNote } = useNotesStore();
+  const { isEditorOpen, setIsEditorOpen, currentNote, setCurrentNote, isReadOnly, setIsReadOnly } = useNotesStore();
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [contentHtml, setContentHtml] = useState('');

@@ -10,6 +10,8 @@ type NotesState = {
   setCurrentNote: (note: Note | null) => void;
   selectedTags: string[];
   setSelectedTags: (tags: string[]) => void;
+  isReadOnly: boolean;
+  setIsReadOnly: (isReadOnly: boolean) => void;
 };
 
 export const useNotesStore = create<NotesState>((set) => ({
@@ -21,4 +23,6 @@ export const useNotesStore = create<NotesState>((set) => ({
   setCurrentNote: (note) => set({ currentNote: note }),
   selectedTags: [],
   setSelectedTags: (tags) => set({ selectedTags: tags }),
+  isReadOnly: false,
+  setIsReadOnly: (isReadOnly) => set({ isReadOnly }),
 }));

@@ -4,6 +4,16 @@ import { motion } from 'framer-motion';
 import type { Note } from '@/lib/types';
 import { useNotesStore } from '@/store/notes';
 import { formatDistanceToNow } from 'date-fns';
+import { MoreVertical, Edit, Star, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { db, auth } from '@/lib/firebase';
 
 type NoteCardProps = {
   note: Note;
@@ -35,12 +45,59 @@ const colorShadows: Record<string, string> = {
 };
 
 export default function NoteCard({ note }: NoteCardProps) {
-  const { setCurrentNote, setIsEditorOpen } = useNotesStore();
+  const { setCurrentNote, setIsEditorOpen, setIsReadOnly } = useNotesStore();
   const { color, tags = [] } = note;
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const user = auth.currentUser;
 
-  const handleCardClick = () => {
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't open if clicking on the menu
+    if ((e.target as HTMLElement).closest('[data-menu-trigger]')) {
+      return;
+    }
     setCurrentNote(note);
+    setIsReadOnly(true);
     setIsEditorOpen(true);
+  };
+
+  const handleEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentNote(note);
+    setIsReadOnly(false);
+    setIsEditorOpen(true);
+    setIsMenuOpen(false);
+  };
+
+  const handleToggleFavorite = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user) return;
+
+    try {
+      const noteRef = doc(db, `users/${user.uid}/notes`, note.id);
+      await updateDoc(noteRef, {
+        isFavorite: !(note as any).isFavorite || false,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+    }
+    setIsMenuOpen(false);
+  };
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user) return;
+
+    try {
+      const noteRef = doc(db, `users/${user.uid}/notes`, note.id);
+      await updateDoc(noteRef, {
+        isDeleted: true,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error('Error deleting note:', error);
+    }
+    setIsMenuOpen(false);
   };
 
   // Get time since last update
@@ -64,14 +121,14 @@ export default function NoteCard({ note }: NoteCardProps) {
   const categoryTag = tags[0] || 'Note';
   const colorValue = color || '#6262f3';
   const shadowClass = colorShadows[colorValue] || 'shadow-[0_0_8px_rgba(98,98,243,0.4)]';
+  const isFavorite = (note as any).isFavorite || false;
 
   return (
     <motion.div
       variants={cardVariants}
       className="break-inside-avoid mb-5"
-      onClick={handleCardClick}
     >
-      <div className="glass-card rounded-2xl p-5 cursor-pointer group">
+      <div className="glass-card rounded-2xl p-5 cursor-pointer group" onClick={handleCardClick}>
         {/* Header with category tag */}
         <div className="flex justify-between items-start mb-3">
           <div className="flex items-center gap-2">
@@ -83,11 +140,32 @@ export default function NoteCard({ note }: NoteCardProps) {
               {categoryTag}
             </span>
           </div>
-          <span className="text-zinc-600 hover:text-zinc-400 transition-colors">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-            </svg>
-          </span>
+
+          <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+            <DropdownMenuTrigger asChild>
+              <button
+                data-menu-trigger
+                className="text-zinc-600 hover:text-zinc-400 transition-colors p-1 -m-1"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <MoreVertical className="w-5 h-5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="glass-panel border-white/10">
+              <DropdownMenuItem onClick={handleEdit} className="cursor-pointer">
+                <Edit className="w-4 h-4 mr-2" />
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleToggleFavorite} className="cursor-pointer">
+                <Star className={`w-4 h-4 mr-2 ${isFavorite ? 'fill-yellow-400 text-yellow-400' : ''}`} />
+                {isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleDelete} className="cursor-pointer text-red-400">
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Title */}
@@ -123,6 +201,9 @@ export default function NoteCard({ note }: NoteCardProps) {
           <span className="text-xs text-zinc-600 font-mono">
             Updated {getTimeAgo()}
           </span>
+          {isFavorite && (
+            <Star className="w-3 h-3 text-yellow-400 fill-yellow-400 ml-auto" />
+          )}
         </div>
       </div>
     </motion.div>
