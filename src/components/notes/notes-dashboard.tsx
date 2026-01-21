@@ -1,34 +1,37 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { User } from 'firebase/auth';
 import {
   collection,
   query,
   where,
   onSnapshot,
-  orderBy,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useNotesStore } from '@/store/notes';
 import type { Note } from '@/lib/types';
 import Sidebar from '@/components/layout/sidebar';
+import MobileHeader from '@/components/layout/mobile-header';
+import MobileBottomNav from '@/components/layout/mobile-bottom-nav';
+import AetherBackground from '@/components/layout/aether-background';
 import NoteEditor from '@/components/notes/note-editor';
 import NotesGrid from './notes-grid';
 import { AnimatePresence } from 'framer-motion';
+import { Search, Plus } from 'lucide-react';
 
 type NotesDashboardProps = {
   user: User;
 };
 
 export default function NotesDashboard({ user }: NotesDashboardProps) {
-  const { setNotes, notes, selectedTags } = useNotesStore();
+  const { setNotes, notes, selectedTags, setIsEditorOpen, setCurrentNote } = useNotesStore();
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (!user) return;
 
-    // Temporarily removing orderBy to avoid composite index requirement
-    // Notes will load unsorted until we create the proper index
+    // Query without orderBy to avoid composite index requirement
     const q = query(
       collection(db, `users/${user.uid}/notes`),
       where('isDeleted', '==', false)
@@ -71,44 +74,146 @@ export default function NotesDashboard({ user }: NotesDashboardProps) {
     return () => unsubscribe();
   }, [user, setNotes]);
 
-  // Filter notes by selected tags
+  // Filter notes by selected tags and search query
   const filteredNotes = useMemo(() => {
-    if (selectedTags.length === 0) return notes;
+    let filtered = notes;
 
-    return notes.filter(note =>
-      selectedTags.every(selectedTag => note.tags?.includes(selectedTag))
-    );
-  }, [notes, selectedTags]);
+    // Filter by tags
+    if (selectedTags.length > 0) {
+      filtered = filtered.filter(note =>
+        selectedTags.every(selectedTag => note.tags?.includes(selectedTag))
+      );
+    }
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(note =>
+        note.title.toLowerCase().includes(query) ||
+        note.content.toLowerCase().includes(query) ||
+        note.tags?.some(tag => tag.toLowerCase().includes(query))
+      );
+    }
+
+    return filtered;
+  }, [notes, selectedTags, searchQuery]);
+
+  // Get greeting based on time of day
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 18) return 'Good Afternoon';
+    return 'Good Evening';
+  };
+
+  // Get current date/time string
+  const getDateTime = () => {
+    const now = new Date();
+    const days = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+    const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    const day = days[now.getDay()];
+    const month = months[now.getMonth()];
+    const date = now.getDate();
+    const time = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    return `${day}, ${month} ${date} • ${time}`;
+  };
+
+  const handleNewNote = () => {
+    setCurrentNote(null);
+    setIsEditorOpen(true);
+  };
+
+  // Get all unique tags from notes
+  const allTags = useMemo(() => {
+    const tagSet = new Set<string>();
+    notes.forEach(note => {
+      note.tags?.forEach(tag => tagSet.add(tag));
+    });
+    return Array.from(tagSet).sort();
+  }, [notes]);
 
   return (
-    <div className="flex">
-      <Sidebar user={user} />
-      <main className="flex-1">
-        <div className="p-4 sm:p-8">
-          <div className="mb-8">
-            <h1 className="font-headline text-4xl font-bold">My Notes</h1>
-            {selectedTags.length > 0 && (
-              <p className="mt-2 text-sm text-zinc-400">
-                Filtered by: {selectedTags.join(', ')} ({filteredNotes.length} {filteredNotes.length === 1 ? 'note' : 'notes'})
-              </p>
-            )}
+    <>
+      <AetherBackground />
+
+      <div className="relative z-10 flex h-screen w-full overflow-hidden">
+        <Sidebar user={user} />
+
+        <main className="flex-1 h-full overflow-y-auto overflow-x-hidden relative scroll-smooth p-4 md:p-8 pb-24 md:pb-8">
+          <MobileHeader user={user} />
+
+          {/* Header Section */}
+          <header className="max-w-5xl mx-auto w-full mb-8 space-y-6">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+              <div>
+                <h1 className="text-white text-3xl md:text-4xl font-bold tracking-tight leading-tight">
+                  {getGreeting()}, <span className="text-transparent bg-clip-text bg-gradient-to-r from-zinc-100 to-zinc-500">{user.displayName?.split(' ')[0] || 'there'}</span>
+                </h1>
+                <p className="text-zinc-500 text-sm mt-1 font-mono tracking-wide">{getDateTime()}</p>
+              </div>
+
+              {/* Search Bar */}
+              <div className="relative group w-full md:w-80">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search className="w-5 h-5 text-zinc-500 group-focus-within:text-primary transition-colors" />
+                </div>
+                <input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="block w-full rounded-xl border-none bg-zinc-800/40 py-3 pl-10 pr-4 text-sm text-zinc-200 placeholder-zinc-500 focus:ring-1 focus:ring-primary/50 focus:bg-zinc-800/60 transition-all backdrop-blur-md shadow-inner"
+                  placeholder="Search notes, tags, or ideas..."
+                  type="text"
+                />
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                  <span className="text-[10px] text-zinc-600 border border-zinc-700 rounded px-1.5 py-0.5 font-mono">⌘K</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Filter Chips */}
+            <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
+              <button
+                onClick={() => setSearchQuery('')}
+                className={`px-4 py-1.5 rounded-full text-xs font-medium border transition-colors whitespace-nowrap shadow-sm ${searchQuery === '' && selectedTags.length === 0
+                    ? 'bg-zinc-800/80 text-white border-zinc-700'
+                    : 'bg-zinc-800/30 text-zinc-400 border-transparent hover:border-zinc-700 hover:text-zinc-200'
+                  }`}
+              >
+                All Notes
+              </button>
+              {allTags.slice(0, 5).map((tag) => (
+                <button
+                  key={tag}
+                  className="px-4 py-1.5 rounded-full bg-zinc-800/30 text-zinc-400 text-xs font-medium border border-transparent hover:border-zinc-700 hover:text-zinc-200 transition-colors whitespace-nowrap"
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          </header>
+
+          {/* Notes Grid */}
+          <div className="max-w-5xl mx-auto w-full">
+            <AnimatePresence>
+              <NotesGrid notes={filteredNotes} />
+            </AnimatePresence>
           </div>
-          <AnimatePresence>
-            <NotesGrid notes={filteredNotes} />
-          </AnimatePresence>
+        </main>
+
+        {/* Floating Action Button (Glass Pill) */}
+        <div className="fixed bottom-6 right-6 md:bottom-10 md:right-10 z-50">
+          <button
+            onClick={handleNewNote}
+            className="glass-pill-button group flex items-center gap-2 pl-4 pr-5 py-3 rounded-full text-white transition-all hover:scale-105 active:scale-95"
+          >
+            <Plus className="w-5 h-5 text-primary-200 group-hover:rotate-90 transition-transform" />
+            <span className="font-medium text-sm tracking-wide text-primary-50">New Note</span>
+          </button>
         </div>
-        {/* Mobile FAB for New Note */}
-        <button
-          onClick={() => { useNotesStore.getState().setCurrentNote(null); useNotesStore.getState().setIsEditorOpen(true); }}
-          className="md:hidden fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-indigo-500 text-white shadow-lg hover:bg-indigo-600 transition-colors"
-          aria-label="New Note"
-        >
-          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-        </button>
-      </main>
-      <NoteEditor />
-    </div>
+
+        <MobileBottomNav />
+        <NoteEditor />
+      </div>
+    </>
   );
 }

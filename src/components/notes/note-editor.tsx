@@ -1,27 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
 import {
   collection,
   addDoc,
@@ -33,10 +15,13 @@ import { db, auth } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useNotesStore } from '@/store/notes';
 import type { Note } from '@/lib/types';
-import { Loader2, Trash2 } from 'lucide-react';
+import { ArrowLeft, MoreVertical, Loader2, Trash2 } from 'lucide-react';
+import { useEditor } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Link from '@tiptap/extension-link';
+import EditorToolbar from '@/components/editor/editor-toolbar';
+import { EditorContent } from '@tiptap/react';
 import TagInput from './tag-input';
-import { useSettingsStore } from '@/store/settings';
-// AI summarization removed - using simple text excerpt
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,24 +32,28 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
 
 const noteSchema = z.object({
   title: z.string().min(1, 'Title is required').max(100),
   content: z.string().min(1, 'Content is required'),
   color: z.string().optional(),
   tags: z.array(z.string()).default([]),
-  colSpan: z.number().min(1).max(3).optional(),
-  rowSpan: z.number().min(1).max(3).optional(),
 });
 
-const colors = ['#6366f1', '#ec4899', '#22c55e', '#f97316', '#06b6d4'];
+const colors = [
+  { value: '#6262f3', label: 'Blue' },
+  { value: '#ec4899', label: 'Pink' },
+  { value: '#22c55e', label: 'Green' },
+  { value: '#f97316', label: 'Orange' },
+  { value: '#06b6d4', label: 'Cyan' },
+];
 
 export default function NoteEditor() {
   const { isEditorOpen, setIsEditorOpen, currentNote, setCurrentNote } = useNotesStore();
-  const defaultNoteColor = useSettingsStore((state) => state.defaultNoteColor);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [contentHtml, setContentHtml] = useState('');
   const { toast } = useToast();
   const user = auth.currentUser;
 
@@ -73,57 +62,106 @@ export default function NoteEditor() {
     defaultValues: {
       title: '',
       content: '',
-      color: colors[0],
+      color: colors[0].value,
       tags: [],
-      colSpan: 1,
-      rowSpan: 1,
     },
   });
 
+  // Initialize TipTap editor
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        heading: {
+          levels: [1, 2, 3],
+        },
+      }),
+      Link.configure({
+        openOnClick: false,
+        HTMLAttributes: {
+          class: 'text-primary underline',
+        },
+      }),
+    ],
+    content: contentHtml,
+    editorProps: {
+      attributes: {
+        class: 'prose prose-invert max-w-none focus:outline-none min-h-[250px] text-zinc-300 leading-relaxed',
+      },
+    },
+    onUpdate: ({ editor }) => {
+      const html = editor.getHTML();
+      setContentHtml(html);
+      // Extract plain text for content field
+      const text = editor.getText();
+      form.setValue('content', text);
+    },
+  });
+
+  // Load note data when currentNote changes
   useEffect(() => {
     if (currentNote) {
       form.reset({
         title: currentNote.title,
         content: currentNote.content,
-        color: currentNote.color || colors[0],
+        color: currentNote.color || colors[0].value,
         tags: currentNote.tags || [],
-        colSpan: currentNote.colSpan || 1,
-        rowSpan: currentNote.rowSpan || 1,
       });
+      const htmlContent = (currentNote as any).contentHtml || `<p>${currentNote.content}</p>`;
+      setContentHtml(htmlContent);
+      editor?.commands.setContent(htmlContent);
     } else {
       form.reset({
         title: '',
         content: '',
-        color: defaultNoteColor,
+        color: colors[0].value,
         tags: [],
-        colSpan: 1,
-        rowSpan: 1,
       });
+      setContentHtml('');
+      editor?.commands.setContent('');
     }
-  }, [currentNote, form, isEditorOpen, defaultNoteColor]);
+  }, [currentNote, form, isEditorOpen, editor]);
 
   const handleClose = () => {
     if (isSaving || isDeleting) return;
     setIsEditorOpen(false);
     setCurrentNote(null);
-  }
+  };
+
+  const getTimeSinceEdit = () => {
+    if (!currentNote?.updatedAt) return '';
+
+    const now = Date.now();
+    const updated = currentNote.updatedAt instanceof Object && 'seconds' in currentNote.updatedAt
+      ? currentNote.updatedAt.seconds * 1000
+      : Date.now();
+    const diff = now - updated;
+
+    const minutes = Math.floor(diff / 60000);
+    if (minutes < 1) return 'EDITED JUST NOW';
+    if (minutes < 60) return `EDITED ${minutes}M AGO`;
+
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `EDITED ${hours}H AGO`;
+
+    const days = Math.floor(hours / 24);
+    return `EDITED ${days}D AGO`;
+  };
 
   const onSubmit = async (values: z.infer<typeof noteSchema>) => {
     if (!user) {
       toast({ variant: 'destructive', title: 'Not authenticated' });
       return;
     }
+
     setIsSaving(true);
     try {
-      // Generate simple excerpt from content (no AI needed)
-      let excerpt = '';
-      if (values.content) {
-        excerpt = values.content.substring(0, 150) + (values.content.length > 150 ? '...' : '');
-      }
+      // Generate excerpt from plain text
+      const excerpt = values.content.substring(0, 150) + (values.content.length > 150 ? '...' : '');
 
-      const noteData: Omit<Note, 'id' | 'createdAt'> = {
+      const noteData = {
         ...values,
         excerpt,
+        contentHtml,
         updatedAt: serverTimestamp(),
         userId: user.uid,
         isDeleted: false,
@@ -163,161 +201,119 @@ export default function NoteEditor() {
     } finally {
       setIsDeleting(false);
     }
-  }
+  };
+
+  if (!isEditorOpen) return null;
 
   return (
-    <Dialog open={isEditorOpen} onOpenChange={handleClose}>
-      <DialogContent className="border-white/10 bg-background/80 backdrop-blur-xl sm:max-w-[625px] max-h-[85vh] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            <DialogHeader>
-              <DialogTitle>
-                <FormField
-                  control={form.control}
-                  name="title"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <Input
-                          placeholder="Note Title"
-                          className="border-0 bg-transparent p-0 text-2xl font-bold text-zinc-100 focus-visible:ring-0 focus-visible:ring-offset-0"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <FormField
-                control={form.control}
-                name="content"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-zinc-400">Content</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Write your note here..."
-                        className="min-h-[250px] resize-none border-white/10 bg-white/5 font-code"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="color"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-zinc-400">Color</FormLabel>
-                    <FormControl>
-                      <div className="flex gap-2">
-                        {colors.map(color => (
-                          <button key={color} type="button" onClick={() => field.onChange(color)} className={`h-8 w-8 rounded-full border-2 transition-all ${field.value === color ? 'border-primary' : 'border-transparent'}`}>
-                            <div className="h-full w-full rounded-full" style={{ backgroundColor: color }}></div>
-                          </button>
-                        ))}
-                      </div>
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="tags"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-zinc-400">Tags</FormLabel>
-                    <FormControl>
-                      <TagInput
-                        tags={field.value}
-                        onChange={field.onChange}
-                        placeholder="Add tags (press Enter)"
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="colSpan"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-zinc-400">Note Size</FormLabel>
-                    <FormControl>
-                      <div className="grid grid-cols-2 gap-3">
-                        {[
-                          { label: 'Small', col: 1, row: 1 },
-                          { label: 'Wide', col: 2, row: 1 },
-                          { label: 'Tall', col: 1, row: 2 },
-                          { label: 'Large', col: 2, row: 2 },
-                        ].map((size) => (
-                          <button
-                            key={size.label}
-                            type="button"
-                            onClick={() => {
-                              field.onChange(size.col);
-                              form.setValue('rowSpan', size.row);
-                            }}
-                            className={`flex flex-col items-center gap-2 rounded-lg border-2 p-3 transition-all ${field.value === size.col && form.getValues('rowSpan') === size.row
-                              ? 'border-indigo-500 bg-indigo-500/10'
-                              : 'border-white/10 hover:border-white/20'
-                              }`}
-                          >
-                            <div
-                              className="rounded bg-indigo-500/30"
-                              style={{
-                                width: size.col * 20,
-                                height: size.row * 20,
-                              }}
-                            />
-                            <span className="text-xs text-zinc-400">{size.label}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
+    <div className="fixed inset-0 z-50 bg-background-dark/95 backdrop-blur-sm">
+      <div className="h-full flex flex-col">
+        {/* Mobile Header */}
+        <div className="flex items-center justify-between p-4 border-b border-white/5">
+          <button
+            onClick={handleClose}
+            disabled={isSaving || isDeleting}
+            className="w-10 h-10 flex items-center justify-center rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 transition-all"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+
+          {currentNote && (
+            <p className="text-[10px] text-zinc-600 font-mono tracking-wider">
+              {getTimeSinceEdit()}
+            </p>
+          )}
+
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <button
+                disabled={isSaving || isDeleting}
+                className="w-10 h-10 flex items-center justify-center rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 transition-all"
+              >
+                <MoreVertical className="w-5 h-5" />
+              </button>
+            </AlertDialogTrigger>
+            {currentNote && (
+              <AlertDialogContent className="glass-panel border-white/10">
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete this note?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action will move the note to trash.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDelete}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            )}
+          </AlertDialog>
+        </div>
+
+        {/* Editor Content */}
+        <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto p-6 space-y-6">
+          {/* Title */}
+          <input
+            {...form.register('title')}
+            placeholder="Note Title"
+            className="w-full bg-transparent border-none text-3xl font-bold text-white placeholder-zinc-700 focus:outline-none"
+          />
+
+          {/* Rich Text Editor */}
+          <div className="space-y-3">
+            <EditorToolbar editor={editor} />
+            <div className="glass-card rounded-xl p-4 min-h-[300px]">
+              <EditorContent editor={editor} />
             </div>
-            <DialogFooter className="sm:justify-between">
-              <div>
-                {currentNote && (
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="destructive" type="button" disabled={isSaving || isDeleting}>
-                        {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />} Delete
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This action will move the note to the trash.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                )}
-              </div>
-              <Button type="submit" disabled={isSaving || isDeleting}>
-                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {currentNote ? 'Save Changes' : 'Create Note'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+          </div>
+
+          {/* Color Selection */}
+          <div className="space-y-2">
+            <label className="text-sm text-zinc-400 font-medium">Color</label>
+            <div className="flex gap-2">
+              {colors.map((color) => (
+                <button
+                  key={color.value}
+                  type="button"
+                  onClick={() => form.setValue('color', color.value)}
+                  className={`w-10 h-10 rounded-full border-2 transition-all ${form.watch('color') === color.value
+                      ? 'border-white scale-110'
+                      : 'border-transparent opacity-70 hover:opacity-100'
+                    }`}
+                  style={{ backgroundColor: color.value }}
+                  title={color.label}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Tags */}
+          <div className="space-y-2">
+            <label className="text-sm text-zinc-400 font-medium">Tags</label>
+            <TagInput
+              tags={form.watch('tags')}
+              onChange={(tags) => form.setValue('tags', tags)}
+              placeholder="Add tags (press Enter)"
+            />
+          </div>
+
+          {/* Save Button */}
+          <button
+            type="submit"
+            disabled={isSaving || isDeleting}
+            className="w-full glass-pill-button flex items-center justify-center gap-2 py-3 rounded-xl text-white font-medium transition-all hover:scale-[1.02] active:scale-95"
+          >
+            {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+            {currentNote ? 'Save Changes' : 'Create Note'}
+          </button>
+        </form>
+      </div>
+    </div>
   );
 }

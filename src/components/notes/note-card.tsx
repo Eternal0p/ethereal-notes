@@ -1,16 +1,9 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import type { Note } from '@/lib/types';
 import { useNotesStore } from '@/store/notes';
+import { formatDistanceToNow } from 'date-fns';
 
 type NoteCardProps = {
   note: Note;
@@ -19,98 +12,119 @@ type NoteCardProps = {
 const cardVariants = {
   initial: {
     opacity: 0,
-    y: 50,
-    scale: 0.95
+    y: 20,
   },
   animate: {
     opacity: 1,
     y: 0,
-    scale: 1,
     transition: {
       type: 'spring',
-      stiffness: 300,
-      damping: 30,
+      stiffness: 260,
+      damping: 20,
     },
   },
-  exit: {
-    opacity: 0,
-    scale: 0.9,
-    transition: {
-      duration: 0.2
-    }
-  },
+};
+
+// Map colors to shadow colors
+const colorShadows: Record<string, string> = {
+  '#6262f3': 'shadow-[0_0_8px_rgba(98,98,243,0.4)]',
+  '#ec4899': 'shadow-[0_0_8px_rgba(236,72,153,0.4)]',
+  '#22c55e': 'shadow-[0_0_8px_rgba(34,197,94,0.4)]',
+  '#f97316': 'shadow-[0_0_8px_rgba(249,115,22,0.4)]',
+  '#06b6d4': 'shadow-[0_0_8px_rgba(6,182,212,0.4)]',
 };
 
 export default function NoteCard({ note }: NoteCardProps) {
   const { setCurrentNote, setIsEditorOpen } = useNotesStore();
-  const { color, colSpan = 1, rowSpan = 1, tags = [] } = note;
+  const { color, tags = [] } = note;
 
   const handleCardClick = () => {
     setCurrentNote(note);
     setIsEditorOpen(true);
   };
 
-  const displayTags = tags.slice(0, 3);
-  const remainingTags = tags.length - 3;
+  // Get time since last update
+  const getTimeAgo = () => {
+    if (!note.updatedAt) return '';
+    const timestamp = note.updatedAt instanceof Object && 'seconds' in note.updatedAt
+      ? new Date(note.updatedAt.seconds * 1000)
+      : new Date();
+    return formatDistanceToNow(timestamp, { addSuffix: true });
+  };
+
+  // Strip HTML tags for excerpt display
+  const getPlainTextExcerpt = () => {
+    const html = (note as any).contentHtml || note.content;
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    const text = div.textContent || div.innerText || '';
+    return text.substring(0, 120) + (text.length > 120 ? '...' : '');
+  };
+
+  const categoryTag = tags[0] || 'Note';
+  const colorValue = color || '#6262f3';
+  const shadowClass = colorShadows[colorValue] || 'shadow-[0_0_8px_rgba(98,98,243,0.4)]';
 
   return (
     <motion.div
       variants={cardVariants}
-      layout
-      className="break-inside-avoid"
-      style={{
-        gridColumn: `span ${colSpan}`,
-        gridRow: `span ${rowSpan}`,
-      }}
+      className="break-inside-avoid mb-5"
+      onClick={handleCardClick}
     >
-      <motion.div
-        whileHover={{ y: -5, transition: { type: 'spring', stiffness: 200, damping: 20 } }}
-      >
-        <Card
-          onClick={handleCardClick}
-          className="cursor-pointer border-white/5 bg-card/30 backdrop-blur-md transition-all duration-300 ease-in-out hover:border-white/20"
-          style={{ '--card-accent': color } as React.CSSProperties}
-        >
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-zinc-100">
-              {color && (
-                <span
-                  className="h-2 w-2 rounded-full"
-                  style={{ backgroundColor: color }}
-                />
-              )}
-              {note.title}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <CardDescription className="text-zinc-400">
-              {note.excerpt || 'No summary available.'}
-            </CardDescription>
-            {tags.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {displayTags.map((tag) => (
-                  <Badge
-                    key={tag}
-                    variant="secondary"
-                    className="bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 text-xs px-2 py-0.5"
-                  >
-                    {tag}
-                  </Badge>
-                ))}
-                {remainingTags > 0 && (
-                  <Badge
-                    variant="secondary"
-                    className="bg-zinc-500/10 text-zinc-400 border border-zinc-500/20 text-xs px-2 py-0.5"
-                  >
-                    +{remainingTags} more
-                  </Badge>
-                )}
-              </div>
+      <div className="glass-card rounded-2xl p-5 cursor-pointer group">
+        {/* Header with category tag */}
+        <div className="flex justify-between items-start mb-3">
+          <div className="flex items-center gap-2">
+            <span
+              className={`w-2 h-2 rounded-full ${shadowClass}`}
+              style={{ backgroundColor: colorValue }}
+            ></span>
+            <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400">
+              {categoryTag}
+            </span>
+          </div>
+          <span className="text-zinc-600 hover:text-zinc-400 transition-colors">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+            </svg>
+          </span>
+        </div>
+
+        {/* Title */}
+        <h3 className="text-lg font-semibold text-white mb-2 leading-tight">
+          {note.title}
+        </h3>
+
+        {/* Content Preview */}
+        <p className="text-sm text-zinc-400 leading-relaxed mb-4 line-clamp-3">
+          {getPlainTextExcerpt()}
+        </p>
+
+        {/* Footer with tags and timestamp */}
+        {tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {tags.slice(0, 3).map((tag, index) => (
+              <span
+                key={index}
+                className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800/50 text-zinc-400 border border-zinc-700/50"
+              >
+                {tag}
+              </span>
+            ))}
+            {tags.length > 3 && (
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800/50 text-zinc-400 border border-zinc-700/50">
+                +{tags.length - 3} more
+              </span>
             )}
-          </CardContent>
-        </Card>
-      </motion.div>
+          </div>
+        )}
+
+        <div className="flex items-center gap-3 border-t border-white/5 pt-3">
+          <span className="text-xs text-zinc-600 font-mono">
+            Updated {getTimeAgo()}
+          </span>
+        </div>
+      </div>
     </motion.div>
   );
 }
-
