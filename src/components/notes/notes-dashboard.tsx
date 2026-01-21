@@ -175,8 +175,8 @@ export default function NotesDashboard({ user }: NotesDashboardProps) {
               <button
                 onClick={() => setSearchQuery('')}
                 className={`px-4 py-1.5 rounded-full text-xs font-medium border transition-colors whitespace-nowrap shadow-sm ${searchQuery === '' && selectedTags.length === 0
-                    ? 'bg-zinc-800/80 text-white border-zinc-700'
-                    : 'bg-zinc-800/30 text-zinc-400 border-transparent hover:border-zinc-700 hover:text-zinc-200'
+                  ? 'bg-zinc-800/80 text-white border-zinc-700'
+                  : 'bg-zinc-800/30 text-zinc-400 border-transparent hover:border-zinc-700 hover:text-zinc-200'
                   }`}
               >
                 All Notes
@@ -206,8 +206,8 @@ export default function NotesDashboard({ user }: NotesDashboardProps) {
             onClick={handleNewNote}
             className="glass-pill-button group flex items-center gap-2 pl-4 pr-5 py-3 rounded-full text-white transition-all hover:scale-105 active:scale-95"
           >
-            <Plus className="w-5 h-5 text-primary-200 group-hover:rotate-90 transition-transform" />
-            <span className="font-medium text-sm tracking-wide text-primary-50">New Note</span>
+            <Plus className="w-5 h-5 text-white group-hover:rotate-90 transition-transform" />
+            <span className="font-medium text-sm tracking-wide text-white">New Note</span>
           </button>
         </div>
 
