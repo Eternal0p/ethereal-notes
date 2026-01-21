@@ -126,6 +126,7 @@ export default function NoteEditor() {
         excerpt,
         updatedAt: serverTimestamp(),
         userId: user.uid,
+        isDeleted: false,
       };
 
       if (currentNote) {
