@@ -139,7 +139,7 @@ export default function NotesDashboard({ user }: NotesDashboardProps) {
       <div className="relative z-10 flex h-screen w-full overflow-hidden">
         <Sidebar user={user} />
 
-        <main className="flex-1 h-full overflow-y-auto overflow-x-hidden relative scroll-smooth p-4 md:p-8 pb-24 md:pb-8">
+        <main className="flex-1 h-full overflow-y-auto overflow-x-hidden relative scroll-smooth p-4 md:p-8 pb-28 md:pb-8">
           <MobileHeader user={user} />
 
           {/* Header Section */}
@@ -201,7 +201,7 @@ export default function NotesDashboard({ user }: NotesDashboardProps) {
         </main>
 
         {/* Floating Action Button (Glass Pill) */}
-        <div className="fixed bottom-6 right-6 md:bottom-10 md:right-10 z-50">
+        <div className="fixed bottom-20 right-6 md:bottom-10 md:right-10 z-50">
           <button
             onClick={handleNewNote}
             className="glass-pill-button group flex items-center gap-2 pl-4 pr-5 py-3 rounded-full text-white transition-all hover:scale-105 active:scale-95"
