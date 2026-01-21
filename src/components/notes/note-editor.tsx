@@ -263,57 +263,66 @@ export default function NoteEditor() {
           <input
             {...form.register('title')}
             placeholder="Note Title"
-            className="w-full bg-transparent border-none text-3xl font-bold text-white placeholder-zinc-700 focus:outline-none"
+            disabled={isReadOnly}
+            className="w-full bg-transparent border-none text-3xl font-bold text-white placeholder-zinc-700 focus:outline-none disabled:opacity-70"
           />
 
           {/* Rich Text Editor */}
-          <div className="space-y-3">
-            <EditorToolbar editor={editor} />
+          {!isReadOnly ? (
+            <div className="space-y-3">
+              <EditorToolbar editor={editor} />
+              <div className="glass-card rounded-xl p-4 min-h-[300px]">
+                <EditorContent editor={editor} />
+              </div>
+            </div>
+          ) : (
             <div className="glass-card rounded-xl p-4 min-h-[300px]">
-              <EditorContent editor={editor} />
+              <div className="prose prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: contentHtml }} />
             </div>
-          </div>
+          )}
 
-          {/* Color Selection */}
-          <div className="space-y-2">
-            <label className="text-sm text-zinc-400 font-medium">Color</label>
-            <div className="flex gap-2">
-              {colors.map((color) => (
-                <button
-                  key={color.value}
-                  type="button"
-                  onClick={() => form.setValue('color', color.value)}
-                  className={`w-10 h-10 rounded-full border-2 transition-all ${form.watch('color') === color.value
-                    ? 'border-white scale-110'
-                    : 'border-transparent opacity-70 hover:opacity-100'
-                    }`}
-                  style={{ backgroundColor: color.value }}
-                  title={color.label}
+          {!isReadOnly && (
+            <>
+              {/* Color Selection */}
+              <div className="space-y-2">
+                <label className="text-sm text-zinc-400 font-medium">Color</label>
+                <div className="flex gap-2">
+                  {colors.map((color) => (
+                    <button
+                      key={color.value}
+                      type="button"
+                      onClick={() => form.setValue('color', color.value)}
+                      className={`w-10 h-10 rounded-full border-2 transition-all ${form.watch('color') === color.value
+                        ? 'border-white scale-110'
+                        : 'border-transparent opacity-70 hover:opacity-100'
+                        }`}
+                      style={{ backgroundColor: color.value }}
+                      title={color.label}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Tags */}
+              <div className="space-y-2">
+                <label className="text-sm text-zinc-400 font-medium">Tags</label>
+                <TagInput
+                  tags={form.watch('tags')}
+                  onChange={(tags) => form.setValue('tags', tags)}
+                  placeholder="Add tags (press Enter)"
                 />
-              ))}
-            </div>
-          </div>
+              </div>
 
-          {/* Tags */}
-          <div className="space-y-2">
-            <label className="text-sm text-zinc-400 font-medium">Tags</label>
-            <TagInput
-              tags={form.watch('tags')}
-              onChange={(tags) => form.setValue('tags', tags)}
-              placeholder="Add tags (press Enter)"
-            />
-          </div>
-
-          {/* Save Button */}
-          <button
-            type="submit"
-            disabled={isSaving || isDeleting}
-            className="w-full glass-pill-button flex items-center justify-center gap-2 py-3 rounded-xl text-white font-medium transition-all hover:scale-[1.02] active:scale-95"
-          >
-            {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
-            {currentNote ? 'Save Changes' : 'Create Note'}
-          </button>
-        </form>
+              {/* Save Button */}
+              <button
+                type="submit"
+                disabled={isSaving || isDeleting}
+                className="w-full glass-pill-button flex items-center justify-center gap-2 py-3 rounded-xl text-white font-medium transition-all hover:scale-[1.02] active:scale-95"
+              >
+                {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+                {currentNote ? 'Save Changes' : 'Create Note'}
+              </button>
+            </form>
       </div>
     </div>
   );
