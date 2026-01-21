@@ -19,6 +19,7 @@ import NoteEditor from '@/components/notes/note-editor';
 import NotesGrid from './notes-grid';
 import { AnimatePresence } from 'framer-motion';
 import { Search, Plus } from 'lucide-react';
+import { MobileSidebar } from '@/components/layout/mobile-sidebar';
 
 type NotesDashboardProps = {
   user: User;
@@ -27,6 +28,7 @@ type NotesDashboardProps = {
 export default function NotesDashboard({ user }: NotesDashboardProps) {
   const { setNotes, notes, selectedTags, setIsEditorOpen, setCurrentNote } = useNotesStore();
   const [searchQuery, setSearchQuery] = useState('');
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -140,7 +142,7 @@ export default function NotesDashboard({ user }: NotesDashboardProps) {
         <Sidebar user={user} />
 
         <main className="flex-1 h-full overflow-y-auto overflow-x-hidden relative scroll-smooth p-4 md:p-8 pb-28 md:pb-8">
-          <MobileHeader user={user} />
+          <MobileHeader user={user} onMenuClick={() => setIsMobileSidebarOpen(true)} />
 
           {/* Header Section */}
           <header className="max-w-5xl mx-auto w-full mb-8 space-y-6">
