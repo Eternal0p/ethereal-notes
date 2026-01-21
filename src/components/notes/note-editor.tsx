@@ -322,7 +322,9 @@ export default function NoteEditor() {
                 {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
                 {currentNote ? 'Save Changes' : 'Create Note'}
               </button>
-            </form>
+            </>
+          )}
+        </form>
       </div>
     </div>
   );
