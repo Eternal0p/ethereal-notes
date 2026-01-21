@@ -181,7 +181,7 @@ export default function NotesDashboard({ user }: NotesDashboardProps) {
               >
                 All Notes
               </button>
-              {allTags.slice(0, 5).map((tag) => (
+              {allTags.filter(tag => tag && tag.trim() && tag.toLowerCase() !== 'enter').slice(0, 5).map((tag) => (
                 <button
                   key={tag}
                   className="px-4 py-1.5 rounded-full bg-zinc-800/30 text-zinc-400 text-xs font-medium border border-transparent hover:border-zinc-700 hover:text-zinc-200 transition-colors whitespace-nowrap"
