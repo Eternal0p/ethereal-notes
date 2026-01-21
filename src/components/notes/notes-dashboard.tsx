@@ -29,30 +29,37 @@ export default function NotesDashboard({ user }: NotesDashboardProps) {
 
     const q = query(
       collection(db, `users/${user.uid}/notes`),
-      where('isDeleted', '!=', true),
+      where('isDeleted', '==', false),
       orderBy('updatedAt', 'desc')
     );
 
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const notesData: Note[] = [];
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        notesData.push({
-          id: doc.id,
-          title: data.title,
-          content: data.content,
-          excerpt: data.excerpt,
-          tags: data.tags || [],
-          color: data.color,
-          colSpan: data.colSpan || 1,
-          rowSpan: data.rowSpan || 1,
-          createdAt: data.createdAt,
-          updatedAt: data.updatedAt,
-          userId: data.userId,
+    const unsubscribe = onSnapshot(
+      q,
+      (querySnapshot) => {
+        const notesData: Note[] = [];
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          notesData.push({
+            id: doc.id,
+            title: data.title,
+            content: data.content,
+            excerpt: data.excerpt,
+            tags: data.tags || [],
+            color: data.color,
+            colSpan: data.colSpan || 1,
+            rowSpan: data.rowSpan || 1,
+            createdAt: data.createdAt,
+            updatedAt: data.updatedAt,
+            userId: data.userId,
+          });
         });
-      });
-      setNotes(notesData);
-    });
+        console.log(`Loaded ${notesData.length} notes from Firestore`);
+        setNotes(notesData);
+      },
+      (error) => {
+        console.error('Error fetching notes:', error);
+      }
+    );
 
     return () => unsubscribe();
   }, [user, setNotes]);
