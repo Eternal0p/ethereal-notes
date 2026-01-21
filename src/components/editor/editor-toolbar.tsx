@@ -43,10 +43,11 @@ export default function EditorToolbar({ editor }: EditorToolbarProps) {
     return (
         <div className="flex items-center gap-2 p-2 glass-panel rounded-xl border border-white/10">
             <button
+                type="button"
                 onClick={() => editor.chain().focus().toggleBold().run()}
                 className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all ${editor.isActive('bold')
-                        ? 'bg-white/20 text-white'
-                        : 'text-zinc-400 hover:text-white hover:bg-white/10'
+                    ? 'bg-white/20 text-white'
+                    : 'text-zinc-400 hover:text-white hover:bg-white/10'
                     }`}
                 title="Bold"
             >
@@ -54,10 +55,11 @@ export default function EditorToolbar({ editor }: EditorToolbarProps) {
             </button>
 
             <button
+                type="button"
                 onClick={() => editor.chain().focus().toggleItalic().run()}
                 className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all ${editor.isActive('italic')
-                        ? 'bg-white/20 text-white'
-                        : 'text-zinc-400 hover:text-white hover:bg-white/10'
+                    ? 'bg-white/20 text-white'
+                    : 'text-zinc-400 hover:text-white hover:bg-white/10'
                     }`}
                 title="Italic"
             >
@@ -65,10 +67,11 @@ export default function EditorToolbar({ editor }: EditorToolbarProps) {
             </button>
 
             <button
+                type="button"
                 onClick={() => editor.chain().focus().toggleStrike().run()}
                 className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all ${editor.isActive('strike')
-                        ? 'bg-white/20 text-white'
-                        : 'text-zinc-400 hover:text-white hover:bg-white/10'
+                    ? 'bg-white/20 text-white'
+                    : 'text-zinc-400 hover:text-white hover:bg-white/10'
                     }`}
                 title="Underline"
             >
@@ -78,10 +81,11 @@ export default function EditorToolbar({ editor }: EditorToolbarProps) {
             <div className="w-px h-6 bg-white/10"></div>
 
             <button
+                type="button"
                 onClick={toggleLink}
                 className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all ${editor.isActive('link')
-                        ? 'bg-white/20 text-white'
-                        : 'text-zinc-400 hover:text-white hover:bg-white/10'
+                    ? 'bg-white/20 text-white'
+                    : 'text-zinc-400 hover:text-white hover:bg-white/10'
                     }`}
                 title="Link"
             >
@@ -89,10 +93,11 @@ export default function EditorToolbar({ editor }: EditorToolbarProps) {
             </button>
 
             <button
+                type="button"
                 onClick={() => editor.chain().focus().toggleCode().run()}
                 className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all ${editor.isActive('code')
-                        ? 'bg-white/20 text-white'
-                        : 'text-zinc-400 hover:text-white hover:bg-white/10'
+                    ? 'bg-white/20 text-white'
+                    : 'text-zinc-400 hover:text-white hover:bg-white/10'
                     }`}
                 title="Code"
             >
@@ -107,6 +112,7 @@ export default function EditorToolbar({ editor }: EditorToolbarProps) {
                         onChange={(e) => setLinkUrl(e.target.value)}
                         onKeyDown={(e) => {
                             if (e.key === 'Enter') {
+                                e.preventDefault();
                                 setLink();
                             } else if (e.key === 'Escape') {
                                 setShowLinkInput(false);
@@ -118,6 +124,7 @@ export default function EditorToolbar({ editor }: EditorToolbarProps) {
                         autoFocus
                     />
                     <button
+                        type="button"
                         onClick={setLink}
                         className="px-2 py-1 text-xs bg-primary text-white rounded hover:bg-primary/80 transition-colors"
                     >
