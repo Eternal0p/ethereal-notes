@@ -22,13 +22,19 @@ import { Search, Plus, Eye, EyeOff } from 'lucide-react';
 import { MobileSidebar } from '@/components/layout/mobile-sidebar';
 import MorningBriefing from '@/components/dashboard/morning-briefing';
 import { useZenMode } from '@/hooks/use-zen-mode';
+import dynamic from 'next/dynamic';
+
+// Lazy load Hyperspeed only on desktop
+const Hyperspeed = dynamic(() => import('@/components/shared/Hyperspeed'), {
+  ssr: false,
+});
 
 type NotesDashboardProps = {
   user: User;
 };
 
 export default function NotesDashboard({ user }: NotesDashboardProps) {
-  const { setNotes, notes, selectedTags, setIsEditorOpen, setCurrentNote } = useNotesStore();
+  const { setNotes, notes, selectedTags, setIsEditorOpen, setCurrentNote, setIsReadOnly } = useNotesStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const { isZenMode, toggleZenMode } = useZenMode();
@@ -140,7 +146,14 @@ export default function NotesDashboard({ user }: NotesDashboardProps) {
 
   return (
     <>
-      <AetherBackground />
+      {/* Use Hyperspeed background on desktop (>= 768px), fallback to Aether on mobile */}
+      <div className="hidden md:block fixed inset-0 z-0">
+        <Hyperspeed />
+      </div>
+      <div className="md:hidden fixed inset-0 z-0">
+        <AetherBackground />
+      </div>
+
       <MorningBriefing notes={notes} userName={user.displayName || 'User'} />
 
       <div className={`relative z-10 flex h-screen w-full overflow-hidden ${isZenMode ? 'zen-mode' : ''}`}>
@@ -149,7 +162,7 @@ export default function NotesDashboard({ user }: NotesDashboardProps) {
         </div>
 
         <main className="flex-1 h-full overflow-y-auto overflow-x-hidden relative scroll-smooth p-4 md:p-8 pb-28 md:pb-8">
-          <MobileHeader user={user} onMenuClick={() => setIsMobileSidebarOpen(true)} />
+          {/* Mobile header removed - using bottom nav only */}
 
           {/* Header Section */}
           <header className="max-w-5xl mx-auto w-full mb-8 space-y-6">

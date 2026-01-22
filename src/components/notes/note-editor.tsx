@@ -59,6 +59,9 @@ export default function NoteEditor() {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [contentHtml, setContentHtml] = useState('');
+  const [wordCount, setWordCount] = useState(0);
+  const [charCount, setCharCount] = useState(0);
+  const [readingTime, setReadingTime] = useState(0);
   const { toast } = useToast();
   const user = auth.currentUser;
 
@@ -186,6 +189,12 @@ export default function NoteEditor() {
       // Extract plain text for content field
       const text = editor.getText();
       form.setValue('content', text);
+
+      // Calculate word count, character count, and reading time
+      const words = text.trim().split(/\s+/).filter(w => w.length > 0);
+      setWordCount(words.length);
+      setCharCount(text.length);
+      setReadingTime(Math.ceil(words.length / 200)); // 200 WPM average
     },
   });
 
@@ -440,6 +449,15 @@ export default function NoteEditor() {
                   onChange={(tags) => form.setValue('tags', tags)}
                   placeholder="Add tags (press Enter)"
                 />
+              </div>
+
+              {/* Word Counter Footer */}
+              <div className="flex items-center gap-4 text-xs text-zinc-500 px-4 py-3 border-t border-white/5 rounded-b-xl bg-zinc-900/20">
+                <span className="font-mono">{wordCount} {wordCount === 1 ? 'word' : 'words'}</span>
+                <span className="text-zinc-700">•</span>
+                <span className="font-mono">{charCount} {charCount === 1 ? 'character' : 'characters'}</span>
+                <span className="text-zinc-700">•</span>
+                <span className="font-mono">{readingTime} min read</span>
               </div>
 
               {/* Save Button */}
