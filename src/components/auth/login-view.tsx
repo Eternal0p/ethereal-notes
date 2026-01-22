@@ -28,6 +28,8 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
+import LightRays from '@/components/shared/LightRays';
+
 export default function LoginView() {
   const { toast } = useToast();
 
@@ -46,8 +48,27 @@ export default function LoginView() {
   };
 
   return (
-    <div className="flex h-screen flex-col items-center justify-center gap-8">
-      <div className="text-center">
+    <div className="relative flex h-screen flex-col items-center justify-center gap-8 overflow-hidden bg-black">
+      {/* LightRays Background */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <LightRays
+          raysOrigin="top-center"
+          raysColor="#ffffff"
+          raysSpeed={1}
+          lightSpread={0.5}
+          rayLength={3}
+          followMouse={true}
+          mouseInfluence={0.1}
+          noiseAmount={0}
+          distortion={0}
+          className="custom-rays"
+          pulsating={false}
+          fadeDistance={1}
+          saturation={1}
+        />
+      </div>
+
+      <div className="relative z-10 text-center">
         <h1 className="font-headline text-5xl font-bold text-zinc-100">
           Ethereal Notes
         </h1>
@@ -58,7 +79,7 @@ export default function LoginView() {
       <Button
         onClick={handleGoogleSignIn}
         size="lg"
-        className="bg-zinc-800 text-zinc-100 hover:bg-zinc-700"
+        className="relative z-10 bg-zinc-800 text-zinc-100 hover:bg-zinc-700"
       >
         <GoogleIcon className="mr-2 h-6 w-6" />
         Sign in with Google
