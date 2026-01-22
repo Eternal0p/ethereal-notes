@@ -36,6 +36,7 @@ type NotesDashboardProps = {
 
 export default function NotesDashboard({ user }: NotesDashboardProps) {
   const { setNotes, notes, selectedTags, setIsEditorOpen, setCurrentNote, setIsReadOnly } = useNotesStore();
+  const { theme } = useThemeStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const { isZenMode, toggleZenMode } = useZenMode();
