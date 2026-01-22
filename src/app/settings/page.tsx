@@ -1,29 +1,15 @@
-'use client';
-
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { auth } from '@/lib/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
-import type { User } from 'firebase/auth';
-import { ArrowLeft, Moon, Sun, LogOut } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
+import { Moon, Sun, LogOut } from 'lucide-react';
 import { useThemeStore } from '@/store/theme';
 import AetherBackground from '@/components/layout/aether-background';
+import Sidebar from '@/components/layout/sidebar';
+import { auth } from '@/lib/firebase';
+import { useRouter } from 'next/navigation';
 
 export default function SettingsPage() {
-    const router = useRouter();
-    const [user, setUser] = useState<User | null>(null);
+    const { user } = useAuth();
     const { theme, toggleTheme } = useThemeStore();
-
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            if (user) {
-                setUser(user);
-            } else {
-                router.push('/');
-            }
-        });
-        return () => unsubscribe();
-    }, [router]);
+    const router = useRouter();
 
     const handleSignOut = async () => {
         await auth.signOut();
@@ -33,25 +19,19 @@ export default function SettingsPage() {
     if (!user) return null;
 
     return (
-        <>
-            <AetherBackground />
+        <div className="flex h-screen w-full bg-black text-white overflow-hidden">
+            <div className="fixed inset-0 z-0 pointer-events-none">
+                <AetherBackground />
+            </div>
 
-            <div className="relative z-10 min-h-screen p-4 md:p-8 pb-28 md:pb-8">
-                {/* Header */}
+            <Sidebar user={user} />
+
+            <main className="flex-1 relative z-10 overflow-y-auto p-4 md:p-8 pb-28 md:pb-8">
                 <div className="max-w-3xl mx-auto mb-8">
-                    <button
-                        onClick={() => router.back()}
-                        className="mb-4 flex items-center gap-2 text-zinc-400 hover:text-white transition-colors"
-                    >
-                        <ArrowLeft className="w-5 h-5" />
-                        <span>Back</span>
-                    </button>
-
-                    <h1 className="text-white text-3xl md:text-4xl font-bold mb-2">Settings</h1>
+                    <h1 className="text-3xl md:text-4xl font-bold mb-2">Settings</h1>
                     <p className="text-zinc-400">Customize your experience</p>
                 </div>
 
-                {/* Settings Sections */}
                 <div className="max-w-3xl mx-auto space-y-6">
                     {/* Appearance */}
                     <div className="glass-card rounded-2xl p-6">
@@ -119,7 +99,7 @@ export default function SettingsPage() {
                         <p className="text-sm text-zinc-500 mt-1">Version 1.0.0</p>
                     </div>
                 </div>
-            </div>
-        </>
+            </main>
+        </div>
     );
 }

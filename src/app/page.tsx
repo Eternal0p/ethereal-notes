@@ -53,7 +53,7 @@ export default function Home() {
 
   return (
     <main className="relative min-h-screen bg-zinc-950 text-white">
-      <EtherealBackground />
+      {!user && <EtherealBackground />}
       {user ? (
         <>
           <NotesDashboard user={user} />
