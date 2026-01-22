@@ -48,7 +48,7 @@ export default function LoginView() {
   };
 
   return (
-    <div className="relative flex h-screen flex-col items-center justify-center gap-8 overflow-hidden bg-black">
+    <div className="relative flex h-screen flex-col items-center justify-center gap-8 overflow-hidden bg-black dark-context">
       {/* LightRays Background */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <LightRays
