@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useSettingsStore } from '@/store/settings';
+import { useThemeStore } from '@/store/theme';
 import type { User } from 'firebase/auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
@@ -29,7 +30,8 @@ const colors = [
 ];
 
 export default function SettingsDialog({ user, open, onOpenChange }: SettingsDialogProps) {
-    const { theme, setTheme, defaultNoteColor, setDefaultNoteColor, gridLayout, setGridLayout } = useSettingsStore();
+    const { defaultNoteColor, setDefaultNoteColor, gridLayout, setGridLayout } = useSettingsStore();
+    const { theme, setTheme } = useThemeStore();
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -83,8 +85,8 @@ export default function SettingsDialog({ user, open, onOpenChange }: SettingsDia
                                     key={color.value}
                                     onClick={() => setDefaultNoteColor(color.value)}
                                     className={`h-10 w-10 rounded-full border-2 transition-all ${defaultNoteColor === color.value
-                                            ? 'border-white scale-110'
-                                            : 'border-transparent hover:scale-105'
+                                        ? 'border-white scale-110'
+                                        : 'border-transparent hover:scale-105'
                                         }`}
                                     title={color.name}
                                 >

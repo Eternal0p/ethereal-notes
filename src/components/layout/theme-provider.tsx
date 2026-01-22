@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useSettingsStore } from '@/store/settings';
+import { useThemeStore } from '@/store/theme';
 
 export default function ThemeProvider({ children }: { children: React.ReactNode }) {
-    const theme = useSettingsStore((state) => state.theme);
+    const theme = useThemeStore((state) => state.theme);
 
     useEffect(() => {
         const root = document.documentElement;
