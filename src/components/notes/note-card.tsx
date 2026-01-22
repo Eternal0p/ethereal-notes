@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
+import { useToast } from '@/hooks/use-toast';
 
 type NoteCardProps = {
   note: Note;
@@ -48,6 +49,8 @@ export default function NoteCard({ note }: NoteCardProps) {
   const { setCurrentNote, setIsEditorOpen, setIsReadOnly } = useNotesStore();
   const { color, tags = [] } = note;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [localIsFavorite, setLocalIsFavorite] = useState((note as any).isFavorite || false);
+  const { toast } = useToast();
   const user = auth.currentUser;
 
   const handleCardClick = (e: React.MouseEvent) => {
@@ -72,14 +75,34 @@ export default function NoteCard({ note }: NoteCardProps) {
     e.stopPropagation();
     if (!user) return;
 
+    const newFavoriteState = !localIsFavorite;
+
+    // Optimistic update
+    setLocalIsFavorite(newFavoriteState);
+
     try {
       const noteRef = doc(db, `users/${user.uid}/notes`, note.id);
       await updateDoc(noteRef, {
-        isFavorite: !(note as any).isFavorite || false,
+        isFavorite: newFavoriteState,
         updatedAt: serverTimestamp(),
+      });
+
+      // Show success toast with animation
+      toast({
+        title: newFavoriteState ? "⭐ Added to favorites" : "Removed from favorites",
+        description: newFavoriteState ? `"${note.title}" is now a favorite` : undefined,
+        duration: 2000,
       });
     } catch (error) {
       console.error('Error toggling favorite:', error);
+      // Revert on error
+      setLocalIsFavorite(!newFavoriteState);
+      toast({
+        variant: "destructive",
+        title: "Error updating favorite",
+        description: "Please try again",
+        duration: 3000,
+      });
     }
     setIsMenuOpen(false);
   };
@@ -121,7 +144,6 @@ export default function NoteCard({ note }: NoteCardProps) {
   const categoryTag = tags[0] || 'Note';
   const colorValue = color || '#6262f3';
   const shadowClass = colorShadows[colorValue] || 'shadow-[0_0_8px_rgba(98,98,243,0.4)]';
-  const isFavorite = (note as any).isFavorite || false;
 
   return (
     <motion.div
@@ -157,8 +179,8 @@ export default function NoteCard({ note }: NoteCardProps) {
                 Edit
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleToggleFavorite} className="cursor-pointer">
-                <Star className={`w-4 h-4 mr-2 ${isFavorite ? 'fill-yellow-400 text-yellow-400' : ''}`} />
-                {isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}
+                <Star className={`w-4 h-4 mr-2 ${localIsFavorite ? 'fill-yellow-400 text-yellow-400' : ''}`} />
+                {localIsFavorite ? 'Remove from Favorites' : 'Add to Favorites'}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleDelete} className="cursor-pointer text-red-400">
                 <Trash2 className="w-4 h-4 mr-2" />
@@ -201,7 +223,7 @@ export default function NoteCard({ note }: NoteCardProps) {
           <span className="text-xs text-zinc-600 font-mono">
             Updated {getTimeAgo()}
           </span>
-          {isFavorite && (
+          {localIsFavorite && (
             <Star className="w-3 h-3 text-yellow-400 fill-yellow-400 ml-auto" />
           )}
         </div>

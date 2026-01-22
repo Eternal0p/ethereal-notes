@@ -125,6 +125,7 @@ export default function NotesDashboard({ user }: NotesDashboardProps) {
 
   const handleNewNote = () => {
     setCurrentNote(null);
+    setIsReadOnly(false); // Ensure edit mode for new notes
     setIsEditorOpen(true);
   };
 

@@ -202,6 +202,8 @@ export default function NoteEditor() {
       setContentHtml(htmlContent);
       editor?.commands.setContent(htmlContent);
     } else {
+      // New note - always start in edit mode
+      setIsReadOnly(false);
       form.reset({
         title: '',
         content: '',
@@ -211,7 +213,7 @@ export default function NoteEditor() {
       setContentHtml('');
       editor?.commands.setContent('');
     }
-  }, [currentNote, form, isEditorOpen, editor]);
+  }, [currentNote, form, isEditorOpen, editor, setIsReadOnly]);
 
   const handleClose = () => {
     if (isSaving || isDeleting) return;
