@@ -60,9 +60,8 @@ export function generateSummary(text: string): { summary: string; keywords: stri
         score += sentDoc.places().out('array').length * 1.5;
         score += sentDoc.organizations().out('array').length * 1.5;
 
-        // Sentences with numbers/dates can be important
+        // Sentences with numbers can be important
         score += sentDoc.numbers().out('array').length * 0.5;
-        score += sentDoc.dates().out('array').length * 0.5;
 
         return { sentence, score, index };
     });
@@ -95,10 +94,10 @@ export function extractKeywords(text: string): string[] {
     keywords.push(...doc.topics().out('array'));
 
     // Extract important nouns (excluding common words)
-    const nouns = doc.nouns().out('array');
+    const nouns = doc.nouns().out('array') as string[];
     const commonWords = new Set(['thing', 'time', 'person', 'way', 'day', 'man', 'year', 'work', 'part', 'place']);
 
-    nouns.forEach(noun => {
+    nouns.forEach((noun: string) => {
         if (!commonWords.has(noun.toLowerCase()) && noun.length > 3) {
             keywords.push(noun);
         }
