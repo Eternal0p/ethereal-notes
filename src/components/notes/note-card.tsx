@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { motion } from 'framer-motion';
 import type { Note } from '@/lib/types';
 import { useNotesStore } from '@/store/notes';
@@ -45,7 +46,7 @@ const colorShadows: Record<string, string> = {
   '#06b6d4': 'shadow-[0_0_8px_rgba(6,182,212,0.4)]',
 };
 
-export default function NoteCard({ note }: NoteCardProps) {
+function NoteCard({ note }: NoteCardProps) {
   const { setCurrentNote, setIsEditorOpen, setIsReadOnly } = useNotesStore();
   const { color, tags = [] } = note;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -231,3 +232,5 @@ export default function NoteCard({ note }: NoteCardProps) {
     </motion.div>
   );
 }
+
+export default memo(NoteCard);

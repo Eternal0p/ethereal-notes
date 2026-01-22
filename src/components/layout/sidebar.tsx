@@ -51,7 +51,7 @@ export default function Sidebar({ user }: SidebarProps) {
     <motion.aside
       initial={{ x: -20, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
-      className="hidden md:flex w-[280px] flex-col h-full p-4 gap-6 z-50 glass-panel md:rounded-2xl m-4 mr-0 border-r-0"
+      className="hidden md:flex w-[280px] flex-col h-full p-4 gap-6 z-50 glass-panel md:rounded-2xl m-4 mr-0 border-r-0 hardware-accelerated"
     >
       {/* Profile Section */}
       <div className="flex items-center gap-3 px-2 pt-2">
@@ -98,8 +98,8 @@ export default function Sidebar({ user }: SidebarProps) {
               key={item.href}
               href={item.href}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group ${isActive
-                  ? 'bg-primary/10 text-primary font-medium shadow-[inset_0_0_0_1px_rgba(98,98,243,0.2)]'
-                  : 'text-zinc-400 hover:text-zinc-100 hover:bg-white/5'
+                ? 'bg-primary/10 text-primary font-medium shadow-[inset_0_0_0_1px_rgba(98,98,243,0.2)]'
+                : 'text-zinc-400 hover:text-zinc-100 hover:bg-white/5'
                 }`}
             >
               <item.icon className={`w-5 h-5 ${isActive ? 'text-primary' : 'text-zinc-500 group-hover:text-zinc-300'}`} />
@@ -118,8 +118,8 @@ export default function Sidebar({ user }: SidebarProps) {
                   key={tag}
                   onClick={() => toggleTag(tag)}
                   className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-sm transition-colors ${selectedTags.includes(tag)
-                      ? 'bg-zinc-800 text-zinc-100'
-                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5'
+                    ? 'bg-zinc-800 text-zinc-100'
+                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5'
                     }`}
                 >
                   <Tag className="w-3 h-3 opacity-50" />
