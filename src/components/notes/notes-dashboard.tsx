@@ -18,8 +18,10 @@ import AetherBackground from '@/components/layout/aether-background';
 import NoteEditor from '@/components/notes/note-editor';
 import NotesGrid from './notes-grid';
 import { AnimatePresence } from 'framer-motion';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, Eye, EyeOff } from 'lucide-react';
 import { MobileSidebar } from '@/components/layout/mobile-sidebar';
+import MorningBriefing from '@/components/dashboard/morning-briefing';
+import { useZenMode } from '@/hooks/use-zen-mode';
 
 type NotesDashboardProps = {
   user: User;
@@ -29,6 +31,7 @@ export default function NotesDashboard({ user }: NotesDashboardProps) {
   const { setNotes, notes, selectedTags, setIsEditorOpen, setCurrentNote } = useNotesStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const { isZenMode, toggleZenMode } = useZenMode();
 
   useEffect(() => {
     if (!user) return;
@@ -137,9 +140,12 @@ export default function NotesDashboard({ user }: NotesDashboardProps) {
   return (
     <>
       <AetherBackground />
+      <MorningBriefing notes={notes} userName={user.displayName || 'User'} />
 
-      <div className="relative z-10 flex h-screen w-full overflow-hidden">
-        <Sidebar user={user} />
+      <div className={`relative z-10 flex h-screen w-full overflow-hidden ${isZenMode ? 'zen-mode' : ''}`}>
+        <div className={isZenMode ? 'zen-hide' : ''}>
+          <Sidebar user={user} />
+        </div>
 
         <main className="flex-1 h-full overflow-y-auto overflow-x-hidden relative scroll-smooth p-4 md:p-8 pb-28 md:pb-8">
           <MobileHeader user={user} onMenuClick={() => setIsMobileSidebarOpen(true)} />
@@ -154,26 +160,40 @@ export default function NotesDashboard({ user }: NotesDashboardProps) {
                 <p className="text-zinc-500 text-sm mt-1 font-mono tracking-wide">{getDateTime()}</p>
               </div>
 
-              {/* Search Bar */}
-              <div className="relative group w-full md:w-80">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="w-5 h-5 text-zinc-500 group-focus-within:text-primary transition-colors" />
-                </div>
-                <input
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="block w-full rounded-xl border-none bg-zinc-800/40 py-3 pl-10 pr-4 text-sm text-zinc-200 placeholder-zinc-500 focus:ring-1 focus:ring-primary/50 focus:bg-zinc-800/60 transition-all backdrop-blur-md shadow-inner"
-                  placeholder="Search notes, tags, or ideas..."
-                  type="text"
-                />
-                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                  <span className="text-[10px] text-zinc-600 border border-zinc-700 rounded px-1.5 py-0.5 font-mono">⌘K</span>
+              <div className="flex items-center gap-3">
+                {/* Zen Mode Toggle */}
+                <button
+                  onClick={toggleZenMode}
+                  className={`p-2 rounded-lg transition-all ${isZenMode
+                    ? 'text-primary bg-primary/10 hover:bg-primary/20'
+                    : 'text-zinc-400 hover:text-white hover:bg-white/10'
+                    }`}
+                  title={`${isZenMode ? 'Exit' : 'Enter'} Zen Mode (Ctrl+\\)`}
+                >
+                  {isZenMode ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+
+                {/* Search Bar */}
+                <div className="relative group w-full md:w-80">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search className="w-5 h-5 text-zinc-500 group-focus-within:text-primary transition-colors" />
+                  </div>
+                  <input
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="block w-full rounded-xl border-none bg-zinc-800/40 py-3 pl-10 pr-4 text-sm text-zinc-200 placeholder-zinc-500 focus:ring-1 focus:ring-primary/50 focus:bg-zinc-800/60 transition-all backdrop-blur-md shadow-inner"
+                    placeholder="Search notes, tags, or ideas..."
+                    type="text"
+                  />
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <span className="text-[10px] text-zinc-600 border border-zinc-700 rounded px-1.5 py-0.5 font-mono">⌘K</span>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Filter Chips */}
-            <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
+            <div className={`flex gap-3 overflow-x-auto pb-2 no-scrollbar ${isZenMode ? 'zen-hide' : ''}`}>
               <button
                 onClick={() => setSearchQuery('')}
                 className={`px-4 py-1.5 rounded-full text-xs font-medium border transition-colors whitespace-nowrap shadow-sm ${searchQuery === '' && selectedTags.length === 0

@@ -1,14 +1,15 @@
 'use client';
 
 import { Editor } from '@tiptap/react';
-import { Bold, Italic, Link as LinkIcon, Code, Underline } from 'lucide-react';
+import { Bold, Italic, Link as LinkIcon, Code, Underline, Sparkles } from 'lucide-react';
 import { useCallback, useState } from 'react';
 
 type EditorToolbarProps = {
     editor: Editor | null;
+    onMagicWandClick?: () => void;
 };
 
-export default function EditorToolbar({ editor }: EditorToolbarProps) {
+export default function EditorToolbar({ editor, onMagicWandClick }: EditorToolbarProps) {
     const [showLinkInput, setShowLinkInput] = useState(false);
     const [linkUrl, setLinkUrl] = useState('');
 
@@ -73,7 +74,7 @@ export default function EditorToolbar({ editor }: EditorToolbarProps) {
                     ? 'bg-white/20 text-white'
                     : 'text-zinc-400 hover:text-white hover:bg-white/10'
                     }`}
-                title="Underline"
+                title="Strikethrough"
             >
                 <Underline className="w-4 h-4" />
             </button>
@@ -103,6 +104,22 @@ export default function EditorToolbar({ editor }: EditorToolbarProps) {
             >
                 <Code className="w-4 h-4" />
             </button>
+
+            {onMagicWandClick && (
+                <>
+                    <div className="w-px h-6 bg-white/10"></div>
+
+                    <button
+                        type="button"
+                        onClick={onMagicWandClick}
+                        className="w-8 h-8 flex items-center justify-center rounded-lg transition-all
+                                   text-primary hover:text-white hover:bg-primary/20"
+                        title="Generate AI Summary"
+                    >
+                        <Sparkles className="w-4 h-4" />
+                    </button>
+                </>
+            )}
 
             {showLinkInput && (
                 <div className="flex items-center gap-2 ml-2">

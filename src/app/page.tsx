@@ -3,6 +3,7 @@
 import { useAuth } from '@/hooks/use-auth';
 import LoginView from '@/components/auth/login-view';
 import NotesDashboard from '@/components/notes/notes-dashboard';
+import MorningBriefingModal from '@/components/notes/morning-briefing-modal';
 import dynamic from 'next/dynamic';
 import { useState, useEffect } from 'react';
 
@@ -18,10 +19,29 @@ const EtherealBackground = dynamic(
 export default function Home() {
   const { user, loading } = useAuth();
   const [mounted, setMounted] = useState(false);
+  const [showBriefing, setShowBriefing] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Check if briefing should be shown (once per day)
+  useEffect(() => {
+    if (!user || !mounted) return;
+
+    const lastShown = localStorage.getItem('morning-briefing-last-shown');
+    const today = new Date().toDateString();
+
+    if (lastShown !== today) {
+      // Show briefing after a short delay
+      const timer = setTimeout(() => {
+        setShowBriefing(true);
+        localStorage.setItem('morning-briefing-last-shown', today);
+      }, 1500); // 1.5 second delay
+
+      return () => clearTimeout(timer);
+    }
+  }, [user, mounted]);
 
   if (loading || !mounted) {
     return (
@@ -34,7 +54,17 @@ export default function Home() {
   return (
     <main className="relative min-h-screen bg-zinc-950 text-white">
       <EtherealBackground />
-      {user ? <NotesDashboard user={user} /> : <LoginView />}
+      {user ? (
+        <>
+          <NotesDashboard user={user} />
+          <MorningBriefingModal
+            open={showBriefing}
+            onClose={() => setShowBriefing(false)}
+          />
+        </>
+      ) : (
+        <LoginView />
+      )}
     </main>
   );
 }

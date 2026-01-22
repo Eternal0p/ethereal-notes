@@ -19,6 +19,11 @@ import { ArrowLeft, MoreVertical, Loader2, Trash2 } from 'lucide-react';
 import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
+import Mention from '@tiptap/extension-mention';
+import { ReactRenderer } from '@tiptap/react';
+import tippy from 'tippy.js';
+import type { SuggestionOptions } from '@tiptap/suggestion';
+import { WikiLinkSuggestion, type WikiLinkSuggestionRef } from '@/components/editor/wiki-link-suggestion';
 import EditorToolbar from '@/components/editor/editor-toolbar';
 import { EditorContent } from '@tiptap/react';
 import TagInput from './tag-input';
@@ -50,7 +55,7 @@ const colors = [
 ];
 
 export default function NoteEditor() {
-  const { isEditorOpen, setIsEditorOpen, currentNote, setCurrentNote, isReadOnly, setIsReadOnly } = useNotesStore();
+  const { isEditorOpen, setIsEditorOpen, currentNote, setCurrentNote, isReadOnly, setIsReadOnly, notes } = useNotesStore();
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [contentHtml, setContentHtml] = useState('');
@@ -82,11 +87,97 @@ export default function NoteEditor() {
           class: 'text-primary underline',
         },
       }),
+      Mention.configure({
+        HTMLAttributes: {
+          class: 'wiki-link text-primary font-medium cursor-pointer hover:underline',
+        },
+        suggestion: {
+          char: '[[',
+          allowSpaces: true,
+          items: ({ query }: { query: string }) => {
+            return notes
+              .filter(note =>
+                note.id !== currentNote?.id && // Exclude current note
+                note.title.toLowerCase().includes(query.toLowerCase())
+              )
+              .slice(0, 10);
+          },
+          render: () => {
+            let component: ReactRenderer<WikiLinkSuggestionRef>;
+            let popup: any;
+
+            return {
+              onStart: (props: any) => {
+                component = new ReactRenderer(WikiLinkSuggestion, {
+                  props,
+                  editor: props.editor,
+                });
+
+                if (!props.clientRect) {
+                  return;
+                }
+
+                popup = tippy('body', {
+                  getReferenceClientRect: props.clientRect,
+                  appendTo: () => document.body,
+                  content: component.element,
+                  showOnCreate: true,
+                  interactive: true,
+                  trigger: 'manual',
+                  placement: 'bottom-start',
+                });
+              },
+
+              onUpdate(props: any) {
+                component.updateProps(props);
+
+                if (!props.clientRect) {
+                  return;
+                }
+
+                popup[0].setProps({
+                  getReferenceClientRect: props.clientRect,
+                });
+              },
+
+              onKeyDown(props: any) {
+                if (props.event.key === 'Escape') {
+                  popup[0].hide();
+                  return true;
+                }
+
+                return component.ref?.onKeyDown(props.event) || false;
+              },
+
+              onExit() {
+                popup[0].destroy();
+                component.destroy();
+              },
+            };
+          },
+        } as Partial<SuggestionOptions>,
+      }),
     ],
     content: contentHtml,
     editorProps: {
       attributes: {
         class: 'prose prose-invert max-w-none focus:outline-none min-h-[250px] text-zinc-300 leading-relaxed',
+      },
+      handleClickOn: (view, pos, node, nodePos, event) => {
+        if (node.type.name === 'mention') {
+          const attrs = node.attrs as { id?: string };
+          if (attrs.id) {
+            // Navigate to the linked note
+            const linkedNote = notes.find(n => n.id === attrs.id);
+            if (linkedNote) {
+              setCurrentNote(linkedNote);
+              setIsReadOnly(true);
+            }
+            event.preventDefault();
+            return true;
+          }
+        }
+        return false;
       },
     },
     onUpdate: ({ editor }) => {
@@ -204,6 +295,42 @@ export default function NoteEditor() {
     }
   };
 
+  const handleMagicWand = async () => {
+    if (!editor) return;
+
+    const text = editor.getText();
+    if (!text || text.trim().length < 50) {
+      toast({
+        variant: 'default',
+        title: 'Content too short',
+        description: 'Add more content to generate a meaningful summary.'
+      });
+      return;
+    }
+
+    toast({ title: 'Generating summary...', description: 'Using AI to analyze your note' });
+
+    // Dynamically import to avoid bundling compromise in initial load
+    const { generateSummary } = await import('@/lib/wiki-utils');
+
+    const { summary, keywords } = generateSummary(text);
+
+    if (summary) {
+      toast({
+        title: 'Summary Generated',
+        description: summary.substring(0, 200) + (summary.length > 200 ? '...' : ''),
+        duration: 10000,
+      });
+
+      // Update keywords in form if available
+      if (keywords.length > 0) {
+        const currentTags = form.getValues('tags');
+        const newTags = Array.from(new Set([...currentTags, ...keywords.slice(0, 5)]));
+        form.setValue('tags', newTags);
+      }
+    }
+  };
+
   if (!isEditorOpen) return null;
 
   return (
@@ -270,7 +397,7 @@ export default function NoteEditor() {
           {/* Rich Text Editor */}
           {!isReadOnly ? (
             <div className="space-y-3">
-              <EditorToolbar editor={editor} />
+              <EditorToolbar editor={editor} onMagicWandClick={handleMagicWand} />
               <div className="glass-card rounded-xl p-4 min-h-[300px]">
                 <EditorContent editor={editor} />
               </div>
