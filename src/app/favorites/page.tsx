@@ -1,3 +1,5 @@
+'use client';
+
 import { useAuth } from '@/hooks/use-auth';
 import { useNotesStore } from '@/store/notes';
 import { Star } from 'lucide-react';

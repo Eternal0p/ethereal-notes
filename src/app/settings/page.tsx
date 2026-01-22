@@ -1,3 +1,5 @@
+'use client';
+
 import { useAuth } from '@/hooks/use-auth';
 import { Moon, Sun, LogOut } from 'lucide-react';
 import { useThemeStore } from '@/store/theme';
