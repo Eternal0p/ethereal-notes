@@ -16,13 +16,14 @@ export default function MorningBriefing({ notes, userName }: MorningBriefingProp
 
     useEffect(() => {
         // Check if we should show the briefing
-        const lastShown = localStorage.getItem('morningBriefing LastShown');
+        const lastShown = localStorage.getItem('morningBriefingLastShown');
         const today = new Date().toDateString();
 
         if (lastShown !== today && notes.length > 0) {
             setIsOpen(true);
         }
-    }, [notes]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [notes.length]); // Only check when notes count changes to avoid loops
 
     const handleClose = () => {
         // Mark as shown for today
